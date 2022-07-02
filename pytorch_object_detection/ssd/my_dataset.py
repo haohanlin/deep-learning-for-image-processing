@@ -10,28 +10,28 @@ class VOCDataSet(Dataset):
     """读取解析PASCAL VOC2007/2012数据集"""
 
     def __init__(self, voc_root, year="2012", transforms=None, train_set='train.txt'):
-        assert year in ["2007", "2012"], "year must be in ['2007', '2012']"
+        assert year in ["2007", "2012"], "year must be in ['2007', '2012']" #判断是否是2007或者2012
         # 增加容错能力
         if "VOCdevkit" in voc_root:
             self.root = os.path.join(voc_root, f"VOC{year}")
         else:
-            self.root = os.path.join(voc_root, "VOCdevkit", f"VOC{year}")
-        self.img_root = os.path.join(self.root, "JPEGImages")
-        self.annotations_root = os.path.join(self.root, "Annotations")
+            self.root = os.path.join(voc_root, "VOCdevkit", f"VOC{year}") #拼接路径
+        self.img_root = os.path.join(self.root, "JPEGImages")  #图片的路径
+        self.annotations_root = os.path.join(self.root, "Annotations") #注释的文件夹
 
-        txt_list = os.path.join(self.root, "ImageSets", "Main", train_set)
+        txt_list = os.path.join(self.root, "ImageSets", "Main", train_set)#找到训练的txt设置。
 
-        with open(txt_list) as read:
-            self.xml_list = [os.path.join(self.annotations_root, line.strip() + ".xml")
+        with open(txt_list) as read: #打开txt读里面的图片名
+            self.xml_list = [os.path.join(self.annotations_root, line.strip() + ".xml") #注释的图片的具体文件
                              for line in read.readlines() if len(line.strip()) > 0]
 
         # read class_indict
         json_file = "./pascal_voc_classes.json"
         assert os.path.exists(json_file), "{} file not exist.".format(json_file)
         with open(json_file, 'r') as f:
-            self.class_dict = json.load(f)
+            self.class_dict = json.load(f) #json读出来的类别
 
-        self.transforms = transforms
+        self.transforms = transforms #保存的标准化参数
 
     def __len__(self):
         return len(self.xml_list)

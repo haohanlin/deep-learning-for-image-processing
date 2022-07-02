@@ -48,7 +48,7 @@ def main(parser_data):
 
     results_file = "results{}.txt".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 
-    data_transform = {
+    data_transform = {#设置数据处理标准化
         "train": transforms.Compose([transforms.SSDCropping(),
                                      transforms.Resize(),
                                      transforms.ColorJitter(),
@@ -61,13 +61,14 @@ def main(parser_data):
                                    transforms.Normalization()])
     }
 
-    VOC_root = parser_data.data_path
+
+    VOC_root = parser_data.data_path #数据路径
     # check voc root
-    if os.path.exists(os.path.join(VOC_root, "VOCdevkit")) is False:
+    if os.path.exists(os.path.join(VOC_root, "VOCdevkit")) is False: #判断是否有这个路径
         raise FileNotFoundError("VOCdevkit dose not in path:'{}'.".format(VOC_root))
 
     # VOCdevkit -> VOC2012 -> ImageSets -> Main -> train.txt
-    train_dataset = VOCDataSet(VOC_root, "2012", data_transform['train'], train_set='train.txt')
+    train_dataset = VOCDataSet(VOC_root, "2012", data_transform['train'], train_set='train.txt') #数据处理
     # 注意训练时，batch_size必须大于1
     batch_size = parser_data.batch_size
     assert batch_size > 1, "batch size must be greater than 1"
@@ -90,26 +91,28 @@ def main(parser_data):
                                                   num_workers=nw,
                                                   collate_fn=train_dataset.collate_fn)
 
-    model = create_model(num_classes=args.num_classes+1)
-    model.to(device)
+    model = create_model(num_classes=args.num_classes+1) #创建模型
+    model.to(device)#使用gpu
 
-    # define optimizer
-    params = [p for p in model.parameters() if p.requires_grad]
+    # define optimizer 定义优化器
+    params = [p for p in model.parameters() if p.requires_grad] #用一个for循环放进列表中
+
     optimizer = torch.optim.SGD(params, lr=0.0005,
-                                momentum=0.9, weight_decay=0.0005)
-    # learning rate scheduler
+                                momentum=0.9, weight_decay=0.0005) #随机梯度下降算法
+    # learning rate scheduler学习速率调度器
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                    step_size=5,
                                                    gamma=0.3)
 
-    # 如果指定了上次训练保存的权重文件地址，则接着上次结果接着训练
+    # 如果指定了上次训练保存的权重文件地址，则接着上次结果接着训练 需要的步骤
     if parser_data.resume != "":
-        checkpoint = torch.load(parser_data.resume, map_location='cpu')
-        model.load_state_dict(checkpoint['model'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-        parser_data.start_epoch = checkpoint['epoch'] + 1
-        print("the training process from epoch{}...".format(parser_data.start_epoch))
+        checkpoint = torch.load(parser_data.resume, map_location='cpu')  #加载打包好的模型
+        model.load_state_dict(checkpoint['model'])      #加载自己模型里面的字典
+        optimizer.load_state_dict(checkpoint['optimizer']) #拿出打包好的模型里面的optimizer 加载到学习里
+        lr_scheduler.load_state_dict(checkpoint['lr_scheduler']) #学习率加载
+        parser_data.start_epoch = checkpoint['epoch'] + 1   #epoch加载
+        print("the training process from epoch{}...".format(parser_data.start_epoch)) #然后就可以了
+        
 
     train_loss = []
     learning_rate = []
